@@ -5,6 +5,7 @@ import com.jd.genie.config.GenieConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
@@ -34,6 +35,7 @@ public class Config {
      */
     private static LLMSettings getDefaultConfig() {
 
+        Environment environment = SpringContextHolder.getApplicationContext().getEnvironment();
         Resource resource = new ClassPathResource("application.yml");
         YamlPropertiesFactoryBean yamlFactory = new YamlPropertiesFactoryBean();
         yamlFactory.setResources(resource);
@@ -47,7 +49,9 @@ public class Config {
                 .baseUrl(props.getProperty("llm.default.base_url", ""))
                 .interfaceUrl(props.getProperty("llm.default.interface_url", "/v1/chat/completions"))
                 .functionCallType(props.getProperty("llm.default.function_call_type", "function_call"))
-                .apiKey(props.getProperty("llm.default.apikey", ""))
+                // Read through Spring so placeholders such as ${LLM_API_KEY:}
+                // are resolved instead of being sent to the provider literally.
+                .apiKey(environment.getProperty("llm.default.apikey", ""))
                 .maxInputTokens(Integer.parseInt(props.getProperty("llm.default.max_input_tokens", "100000")))
                 .build();
     }
